@@ -41,17 +41,34 @@ export default function HeroSection({ mainEvent, fighter1Data, fighter2Data, isL
     setMounted(true);
     const target = new Date(mainEvent.date).getTime();
     const now = Date.now();
-    const isLiveNow = isLive && Math.abs(target - now) < 14400000;
-    const isPast = target < now;
-    setStatus(isLiveNow ? 'live' : isPast ? 'finished' : 'upcoming');
+    const diff = target - now;
+    const absDiff = Math.abs(diff);
+
+    const eventDay = new Date(mainEvent.date).toDateString();
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+    const isSameDay = eventDay === today;
+    const isYesterday = eventDay === yesterday;
+    const isWithinWindow = absDiff < 14400000;
+
+    let newStatus: EventStatus;
+    if (isSameDay || (isLive && isWithinWindow)) {
+      newStatus = 'live';
+    } else if (diff < 0 && !isSameDay && !isWithinWindow) {
+      newStatus = 'finished';
+    } else {
+      newStatus = 'upcoming';
+    }
+    setStatus(newStatus);
 
     const tick = () => {
-      const diff = Math.max(0, target - Date.now());
+      const remaining = Math.max(0, target - Date.now());
       setTimeLeft({
-        days: Math.floor(diff / 86400000),
-        hours: Math.floor((diff / 3600000) % 24),
-        minutes: Math.floor((diff / 60000) % 60),
-        seconds: Math.floor((diff / 1000) % 60),
+        days: Math.floor(remaining / 86400000),
+        hours: Math.floor((remaining / 3600000) % 24),
+        minutes: Math.floor((remaining / 60000) % 60),
+        seconds: Math.floor((remaining / 1000) % 60),
       });
     };
     tick();

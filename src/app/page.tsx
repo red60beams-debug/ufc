@@ -25,9 +25,12 @@ export default async function HomePage() {
   const fighter2Id = (event as any)?.fights?.find((f: any) => f.fighter2 === event.fighter2)?.fighter2Id || (event as any)?.f2Id || '';
 
   const now = new Date();
+  const todayStr = now.toDateString();
   const liveEvents = events.filter((e: any) => {
     if (e.statusState === 'in') return true;
     const eventDate = new Date(e.date);
+    const eventDay = eventDate.toDateString();
+    if (eventDay === todayStr) return true;
     const diff = Math.abs(eventDate.getTime() - now.getTime());
     return diff < 14400000 && eventDate <= now;
   });
