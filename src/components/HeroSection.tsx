@@ -21,12 +21,12 @@ interface HeroProps {
   };
   fighter1Data?: FighterData | null;
   fighter2Data?: FighterData | null;
-  hasStreams?: boolean;
+  isLive?: boolean;
 }
 
 type EventStatus = 'live' | 'upcoming' | 'finished' | 'loading';
 
-export default function HeroSection({ mainEvent, fighter1Data, fighter2Data, hasStreams }: HeroProps) {
+export default function HeroSection({ mainEvent, fighter1Data, fighter2Data, isLive }: HeroProps) {
   const f1Short = mainEvent.fighter1.split(' ').pop() || mainEvent.fighter1;
   const f2Short = mainEvent.fighter2.split(' ').pop() || mainEvent.fighter2;
 
@@ -41,9 +41,9 @@ export default function HeroSection({ mainEvent, fighter1Data, fighter2Data, has
     setMounted(true);
     const target = new Date(mainEvent.date).getTime();
     const now = Date.now();
-    const isLive = hasStreams && Math.abs(target - now) < 86400000 * 2;
+    const isLiveNow = isLive && Math.abs(target - now) < 14400000;
     const isPast = target < now;
-    setStatus(isLive ? 'live' : isPast ? 'finished' : 'upcoming');
+    setStatus(isLiveNow ? 'live' : isPast ? 'finished' : 'upcoming');
 
     const tick = () => {
       const diff = Math.max(0, target - Date.now());
@@ -57,7 +57,7 @@ export default function HeroSection({ mainEvent, fighter1Data, fighter2Data, has
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [mainEvent.date, hasStreams]);
+  }, [mainEvent.date, isLive]);
 
   const f1 = fighter1Data;
   const f2 = fighter2Data;

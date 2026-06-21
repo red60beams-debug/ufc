@@ -1,22 +1,17 @@
 import { getEventsWithFightCards, getNewsWithFallback, getRankingsWithAthletes, getAthlete } from "@/lib/ufc-data-fetcher";
-import { query } from "@/lib/db";
 import { ufcConfig } from "@/lib/ufc-config";
 import Link from "next/link";
 import HeroSection from "@/components/HeroSection";
 import FightCardPanel from "@/components/FightCardPanel";
 import UpcomingEventsCarousel from "@/components/UpcomingEventsCarousel";
 import NewsPanel from "@/components/NewsPanel";
-import StreamSection from "@/components/StreamSection";
-import ChatBox from "@/components/ChatBox";
 import FightPoll from "@/components/FightPoll";
 
 export default async function HomePage() {
-  const [eventsData, newsData, streams, rankingsData, replays] = await Promise.all([
+  const [eventsData, newsData, rankingsData] = await Promise.all([
     getEventsWithFightCards(6),
     getNewsWithFallback(5),
-    query`SELECT s.*, u.username FROM streams s JOIN users u ON s.created_by = u.id ORDER BY s.is_live DESC, s.created_at DESC`,
     getRankingsWithAthletes(),
-    query`SELECT * FROM ufc_replays WHERE published = 1 AND promotion = 'UFC' AND (source IS NULL OR source != 'mmareplayfull') ORDER BY event_date DESC NULLS LAST LIMIT 10`,
   ]);
 
   const events = eventsData.length > 0 ? eventsData : [];
@@ -26,11 +21,17 @@ export default async function HomePage() {
   const fights = (event as any)?.fights || ufcConfig.current_event.fight_card.main;
   const p4p = rankingsData.filter((r: any) => r.name.toLowerCase().includes('pound'));
   const p4pFighters = p4p.flatMap((g: any) => g.ranks.slice(0, 10));
-  const hasStreams = streams.length > 0;
   const fighter1Id = (event as any)?.fights?.find((f: any) => f.fighter1 === event.fighter1)?.fighter1Id || (event as any)?.f1Id || '';
   const fighter2Id = (event as any)?.fights?.find((f: any) => f.fighter2 === event.fighter2)?.fighter2Id || (event as any)?.f2Id || '';
-  const liveStreams = streams.filter((s: any) => s.is_live);
-  const activeReplays = replays && replays.length > 0 ? replays.slice(0, 8) : [];
+
+  const now = new Date();
+  const liveEvents = events.filter((e: any) => {
+    if (e.statusState === 'in') return true;
+    const eventDate = new Date(e.date);
+    const diff = Math.abs(eventDate.getTime() - now.getTime());
+    return diff < 14400000 && eventDate <= now;
+  });
+  const isLive = liveEvents.length > 0;
 
   const [fighter1Data, fighter2Data] = await Promise.all([
     fighter1Id ? getAthlete(fighter1Id).catch(() => null) : null,
@@ -58,8 +59,6 @@ export default async function HomePage() {
     ...g.ranks[0],
     divisionName: g.name,
   })).filter((c: any) => c.athlete);
-
-  const liveCount = streams.filter((s: any) => s.is_live).length;
   const divisionCount = divisions.length;
 
   return (
@@ -67,40 +66,63 @@ export default async function HomePage() {
       <div className="relative bg-gradient-to-r from-ufc-red/10 via-ufc-red/[0.03] to-transparent text-center py-2.5 border-b border-gray-800/30">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(210,10,10,0.05),transparent_70%)]" />
         <div className="relative flex items-center justify-center gap-3">
-          {hasStreams && (
+          {isLive && (
             <span className="relative flex w-2 h-2"><span className="absolute inset-0 rounded-full bg-ufc-red animate-ping" /><span className="relative rounded-full bg-ufc-red w-2 h-2" /></span>
           )}
           <span className="text-ufc-red text-[10px] md:text-xs uppercase tracking-[0.2em] font-semibold">
-            {hasStreams ? '🔴 LIVE STREAMS AVAILABLE' : '⚡ FREE UFC COVERAGE'}
+            {isLive ? '🔴 LIVE EVENT NOW' : '⚡ FREE UFC COVERAGE'}
           </span>
-          <span className="hidden md:inline text-gray-600 text-[10px]">| {events.length} upcoming events · {activeReplays.length} replays</span>
+          <span className="hidden md:inline text-gray-600 text-[10px]">| {events.length} upcoming events</span>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-24">
-        {liveStreams.length > 0 ? (
-          <section className="animate-in stagger-1">
-            <StreamSection streams={streams} />
-            <div className="mt-8">
-              <ChatBox streams={streams} />
+        {isLive && (
+          <section className="animate-in stagger-0">
+            <div className="flex items-center gap-3 mb-5">
+              <span className="relative flex w-3 h-3"><span className="absolute inset-0 rounded-full bg-ufc-red animate-ping" /><span className="relative rounded-full bg-ufc-red w-3 h-3" /></span>
+              <h2 className="text-white text-sm uppercase tracking-[0.3em] font-bold">Live Now</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {liveEvents.map((e: any) => (
+                <Link key={e.id} href={`/watch/${e.id}`}
+                  className="group bg-gradient-to-b from-[#1a1a1a] to-[#111] border border-ufc-red/30 rounded-2xl overflow-hidden card-hover hover:border-ufc-red/60 transition-all"
+                >
+                  <div className="relative aspect-video bg-black flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10" />
+                    <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-ufc-red/90 text-white text-[10px] px-2.5 py-1 rounded-full font-bold">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                      LIVE
+                    </div>
+                    <div className="relative z-20 text-center p-6">
+                      <p className="text-white text-lg font-bold">{e.fighter1} vs {e.fighter2}</p>
+                      <p className="text-gray-400 text-xs mt-1">{e.name}</p>
+                    </div>
+                  </div>
+                  <div className="p-4 flex items-center justify-between">
+                    <span className="text-gray-400 text-xs">Watch Live →</span>
+                    <span className="text-ufc-red text-[10px] uppercase tracking-wider font-semibold">Join Now</span>
+                  </div>
+                </Link>
+              ))}
             </div>
           </section>
-        ) : (
-          <section className="animate-in stagger-1">
-            <HeroSection
-              mainEvent={mainEvent}
-              fighter1Data={fighter1Data}
-              fighter2Data={fighter2Data}
-              hasStreams={hasStreams}
-            />
-          </section>
         )}
+
+        <section className="animate-in stagger-1">
+          <HeroSection
+            mainEvent={mainEvent}
+            fighter1Data={fighter1Data}
+            fighter2Data={fighter2Data}
+            isLive={isLive}
+          />
+        </section>
 
         <section className="animate-in stagger-2">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <StatCard value={events.length} label="Upcoming Events" icon="calendar" />
-            <StatCard value={liveCount || 0} label="Live Now" icon="live" />
-            <StatCard value={activeReplays.length || 0} label="Replays" icon="replay" />
+            <StatCard value={liveEvents.length || 0} label="Live Now" icon="live" />
+            <StatCard value={0} label="Replays" icon="replay" />
             <StatCard value={p4pFighters.length + (champions?.length || 0)} label="Ranked" icon="crown" />
             <StatCard value={divisionCount || 8} label="Divisions" icon="scale" />
             <StatCard value={news.length} label="News" icon="news" />
@@ -306,18 +328,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {streams.length > 0 && liveStreams.length === 0 && (
-          <>
-            <section className="animate-in stagger-5">
-              <SectionHeader label="Streams" />
-              <StreamSection streams={streams} />
-            </section>
-            <section className="animate-in stagger-5">
-              <SectionHeader label="Chat" />
-              <ChatBox streams={streams} />
-            </section>
-          </>
-        )}
+
       </div>
     </div>
   );
