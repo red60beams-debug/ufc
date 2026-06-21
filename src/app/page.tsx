@@ -79,38 +79,28 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {isLive && (
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-116px)] border-b border-gray-800/50 bg-black">
+          <div className="flex-1 bg-black relative">
+            <iframe
+              src="https://soccerball.st/rampages/unoairuf/"
+              className="w-full h-full border-0"
+              allowFullScreen
+              referrerPolicy="no-referrer"
+              sandbox="allow-scripts allow-same-origin allow-fullscreen"
+            />
+          </div>
+          <div className="w-full lg:w-[420px] border-t lg:border-t-0 lg:border-l border-gray-800/50 bg-[#0d0d0d] min-h-[500px] lg:min-h-0">
+            <iframe
+              src="https://www.youtube.com/live_chat?v=RlrRro00XYY&embed_domain=www.ufc.solutions"
+              className="w-full h-full border-0"
+              allow="clipboard-write"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-24">
-        {isLive && (
-          <section className="animate-in stagger-0">
-            <div className="flex items-center gap-3 mb-5">
-              <span className="relative flex w-3 h-3"><span className="absolute inset-0 rounded-full bg-ufc-red animate-ping" /><span className="relative rounded-full bg-ufc-red w-3 h-3" /></span>
-              <h2 className="text-white text-sm uppercase tracking-[0.3em] font-bold">Live Now</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {liveEvents.map((e: any) => (
-                <Link key={e.id} href={`/watch/${e.id}`}
-                  className="group bg-gradient-to-b from-[#1a1a1a] to-[#111] border border-ufc-red/30 rounded-2xl overflow-hidden card-hover hover:border-ufc-red/60 transition-all"
-                >
-                  <div className="relative aspect-video bg-black flex items-center justify-center">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10" />
-                    <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-ufc-red/90 text-white text-[10px] px-2.5 py-1 rounded-full font-bold">
-                      <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                      LIVE
-                    </div>
-                    <div className="relative z-20 text-center p-6">
-                      <p className="text-white text-lg font-bold">{e.fighter1} vs {e.fighter2}</p>
-                      <p className="text-gray-400 text-xs mt-1">{e.name}</p>
-                    </div>
-                  </div>
-                  <div className="p-4 flex items-center justify-between">
-                    <span className="text-gray-400 text-xs">Watch Live →</span>
-                    <span className="text-ufc-red text-[10px] uppercase tracking-wider font-semibold">Join Now</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
 
         <section className="animate-in stagger-1">
           <HeroSection
