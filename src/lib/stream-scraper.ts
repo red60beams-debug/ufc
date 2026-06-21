@@ -11,12 +11,13 @@ interface ScrapeTarget {
   id: string;
   name: string;
   homepage: string;
+  depth?: number;
 }
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
-const SCRAPE_TIMEOUT = 12000;
+const SCRAPE_TIMEOUT = 14000;
 const VERIFY_TIMEOUT = 8000;
 
 const DIRECT_SOURCES: StreamSource[] = [
@@ -30,8 +31,17 @@ const SCRAPE_TARGETS: ScrapeTarget[] = [
   { id: 'streameast', name: 'StreamEast', homepage: 'https://www.streameast100.com/' },
   { id: 'footybite', name: 'Footybite', homepage: 'https://www.footybite.to/' },
   { id: 'soccerstreams', name: 'Soccer Streams', homepage: 'https://www.soccerstreams-free.com/' },
-  { id: 'f1streams', name: 'F1 Streams', homepage: 'https://www.f1streamsfree.com/' },
+  { id: 'nflbite', name: 'NFLBITE', homepage: 'https://www.nflbite.to/' },
   { id: 'nbabite', name: 'NBABITE', homepage: 'https://reddit.nbabite.to/' },
+  { id: 'sportsurge', name: 'SPORTSURGE', homepage: 'https://sportsurge100.com/' },
+  { id: 'hesgoal', name: 'HESGOAL', homepage: 'https://hesgoalfree.com/' },
+  { id: 'footballstreams', name: 'Football Streams', homepage: 'https://footballstreams.top/' },
+  { id: 'crackstreams', name: 'CrackStreams', homepage: 'https://crackstreams.one/' },
+  { id: 'methstreams', name: 'MethStreams', homepage: 'https://www.methstreams.pro/' },
+  { id: 'f1streams', name: 'F1 Streams', homepage: 'https://www.f1streamsfree.com/' },
+  { id: 'freestreams', name: 'Free Streams', homepage: 'https://freestreams-live.top/' },
+  { id: 'hufoot', name: 'Hoofoot', homepage: 'https://hufoot.com/' },
+  { id: 'stream2watch', name: 'Stream2Watch', homepage: 'https://stream2watch.football/' },
 ];
 
 let cache: { sources: StreamSource[]; timestamp: number } | null = null;
@@ -42,8 +52,9 @@ async function fetchPage(url: string, timeout = SCRAPE_TIMEOUT): Promise<string>
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': USER_AGENT },
+      headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en-US,en;q=0.9' },
       signal: controller.signal,
+      redirect: 'follow',
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.text();
@@ -69,60 +80,181 @@ async function verifyUrl(url: string): Promise<boolean> {
   }
 }
 
-function extractBetween(text: string, before: string, after: string, startIdx = 0): string | null {
-  const s = text.indexOf(before, startIdx);
-  if (s === -1) return null;
-  const e = text.indexOf(after, s + before.length);
-  if (e === -1) return null;
-  return text.substring(s + before.length, e);
+function normalizeUrl(href: string, base: string): string {
+  const trimmed = href.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (trimmed.startsWith('//')) return 'https:' + trimmed;
+  try {
+    return new URL(trimmed, base).href;
+  } catch {
+    return base;
+  }
 }
 
-function extractAllLinks(html: string): { href: string; text: string }[] {
+function containsUfc(text: string): boolean {
+  const lower = text.toLowerCase();
+  if (/\bufc\b/.test(lower)) return true;
+  if (/\b(mma|ultimate?\s*fight(ing)?)\b/.test(lower)) return true;
+  return false;
+}
+
+function extractEnhancedLinks(html: string): { href: string; text: string }[] {
   const links: { href: string; text: string }[] = [];
-  const regex = /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    const href = match[1].trim();
-    const text = match[2].replace(/<[^>]*>/g, '').trim();
-    if (href && text) {
-      links.push({ href, text });
+  const seen = new Set<string>();
+
+  const patterns = [
+    /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi,
+    /<a[^>]*href='([^']*)'[^>]*>([\s\S]*?)<\/a>/gi,
+    /<a[^>]*href=([^\s>]+)[^>]*>([\s\S]*?)<\/a>/gi,
+  ];
+
+  for (const regex of patterns) {
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      const href = match[1].trim();
+      const rawText = match[2];
+      const text = rawText
+        .replace(/<[^>]*>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&#(\d+);/g, (_, c) => String.fromCharCode(c))
+        .trim();
+      if (href && text && !seen.has(href)) {
+        seen.add(href);
+        links.push({ href, text });
+      }
     }
   }
+
   return links;
 }
 
-function extractIframeSrc(html: string): string | null {
-  const regex = /<iframe[^>]*src="([^"]*)"[^>]*>/i;
-  const match = regex.exec(html);
-  return match ? match[1] : null;
+function extractEnhancedIframes(html: string): string[] {
+  const urls: string[] = [];
+  const seen = new Set<string>();
+
+  const patterns = [
+    /<iframe[^>]*src="([^"]*)"[^>]*>/gi,
+    /<iframe[^>]*src='([^']*)'[^>]*>/gi,
+    /<iframe[^>]*src=([^\s>]+)[^>]*>/gi,
+    /<embed[^>]*src="([^"]*)"[^>]*>/gi,
+    /<video[^>]*src="([^"]*)"[^>]*>/gi,
+  ];
+
+  for (const regex of patterns) {
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      const src = match[1].trim();
+      if (src && !seen.has(src)) {
+        seen.add(src);
+        urls.push(src);
+      }
+    }
+  }
+
+  return urls;
+}
+
+function extractScriptEmbeds(html: string): string[] {
+  const urls: string[] = [];
+  const patterns = [
+    /(?:https?:)?\/\/[^"'\s]*?(?:player|embed|stream|live)[^"'\s]*\.(?:php|html|js)[^"'\s]*/gi,
+    /data-src=["']([^"']*)["']/gi,
+    /data-embed=["']([^"']*)["']/gi,
+  ];
+
+  for (const regex of patterns) {
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      const url = match[1] || match[0];
+      if (url && url.length > 10 && url.length < 300) {
+        urls.push(url);
+      }
+    }
+  }
+
+  return urls;
+}
+
+function looksLikeStreamUrl(url: string): boolean {
+  const lower = url.toLowerCase();
+  return (
+    /\.(m3u8|mp4|webm|flv|ts)$/i.test(lower) ||
+    /(player|embed|stream|live|watch)/i.test(lower)
+  );
 }
 
 async function scrapeAggregator(target: ScrapeTarget): Promise<StreamSource | null> {
   try {
     const html = await fetchPage(target.homepage);
-    const links = extractAllLinks(html);
+    const links = extractEnhancedLinks(html);
+    const iframes = extractEnhancedIframes(html);
+    const scripts = extractScriptEmbeds(html);
 
-    const ufcLinks = links.filter(
-      l => /ufc/i.test(l.href) || /ufc/i.test(l.text),
-    );
+    const ufcLinks = links.filter(l => containsUfc(l.href) || containsUfc(l.text));
+    const streamIframes = iframes.filter(looksLikeStreamUrl);
+    const streamScripts = scripts.filter(looksLikeStreamUrl);
 
-    if (ufcLinks.length === 0) return null;
+    let embedUrl: string | null = null;
 
-    const firstUfc = ufcLinks[0];
-    const fullUrl = firstUfc.href.startsWith('http')
-      ? firstUfc.href
-      : new URL(firstUfc.href, target.homepage).href;
+    if (streamIframes.length > 0) {
+      embedUrl = streamIframes[0];
+    }
 
-    const eventHtml = await fetchPage(fullUrl);
-    const embedSrc = extractIframeSrc(eventHtml);
+    if (!embedUrl && ufcLinks.length > 0) {
+      for (const link of ufcLinks) {
+        try {
+          const fullUrl = normalizeUrl(link.href, target.homepage);
+          const pageHtml = await fetchPage(fullUrl);
+          const pageIframes = extractEnhancedIframes(pageHtml);
+          const pageEmbeds = pageIframes.filter(looksLikeStreamUrl);
+          if (pageEmbeds.length > 0) {
+            embedUrl = pageEmbeds[0];
+            break;
+          }
+          if (target.depth && target.depth > 1) {
+            const subLinks = extractEnhancedLinks(pageHtml);
+            const subUfc = subLinks.filter(l => containsUfc(l.href) || containsUfc(l.text));
+            for (const sub of subUfc) {
+              try {
+                const subUrl = normalizeUrl(sub.href, fullUrl);
+                const subHtml = await fetchPage(subUrl);
+                const subIframes = extractEnhancedIframes(subHtml);
+                const subEmbeds = subIframes.filter(looksLikeStreamUrl);
+                if (subEmbeds.length > 0) {
+                  embedUrl = subEmbeds[0];
+                  break;
+                }
+              } catch {}
+            }
+            if (embedUrl) break;
+          }
+        } catch {}
+      }
+    }
 
-    if (!embedSrc) return null;
+    if (!embedUrl && streamScripts.length > 0) {
+      embedUrl = streamScripts[0];
+    }
 
-    const verified = await verifyUrl(embedSrc);
+    if (!embedUrl) {
+      return {
+        id: target.id,
+        name: target.name,
+        url: target.homepage,
+        verified: false,
+        type: 'scraped',
+        error: 'No stream embed found',
+      };
+    }
+
+    embedUrl = embedUrl.startsWith('//') ? 'https:' + embedUrl : embedUrl;
+
+    const verified = await verifyUrl(embedUrl);
     return {
       id: target.id,
       name: target.name,
-      url: embedSrc,
+      url: embedUrl,
       verified,
       type: 'scraped',
     };
@@ -160,5 +292,5 @@ export async function discoverSources(force = false): Promise<StreamSource[]> {
 }
 
 export function getDirectSources(): StreamSource[] {
-  return DIRECT_SOURCES;
+  return [...DIRECT_SOURCES];
 }
