@@ -10,12 +10,10 @@ export default function WatchPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [chatOpen, setChatOpen] = useState(true);
   const [chatSrc, setChatSrc] = useState('');
   const [eventStatus, setEventStatus] = useState<'live' | 'upcoming' | 'finished' | null>(null);
 
   useEffect(() => {
-    setChatOpen(window.innerWidth >= 1024);
     setChatSrc(`https://www.youtube.com/live_chat?v=RlrRro00XYY&embed_domain=${encodeURIComponent(window.location.hostname)}`);
   }, []);
 
@@ -71,10 +69,10 @@ export default function WatchPage() {
         </div>
       </header>
 
-      <div className="flex flex-col" style={{ height: 'calc(100dvh - 45px)' }}>
-        <div className="flex flex-1 min-h-0 lg:flex-row">
-          <div className="relative bg-black flex-1 flex flex-col">
-            <div className="relative flex-1 min-h-0">
+      <div className="lg:h-[calc(100dvh-45px)] lg:overflow-hidden">
+        <div className="flex flex-col lg:flex-row lg:h-full">
+          <div className="relative bg-black lg:flex-1 lg:flex lg:flex-col">
+            <div className="relative w-full lg:flex-1 lg:min-h-0" style={{ aspectRatio: '16/9' }}>
               {loading && !error && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-zinc-900">
                   <div className="flex flex-col items-center gap-5">
@@ -141,48 +139,32 @@ export default function WatchPage() {
             </div>
           </div>
 
-          <button
-            onClick={() => setChatOpen(c => !c)}
-            className={`lg:hidden fixed bottom-20 right-4 z-30 w-11 h-11 rounded-full bg-red-600 shadow-lg shadow-red-600/30 flex items-center justify-center active:scale-90 transition-transform duration-200 ${chatOpen ? 'hidden' : 'flex'}`}
-            aria-label="Open chat"
-          >
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-          </button>
-
-          {chatOpen && (
-            <div
-              onClick={() => setChatOpen(false)}
-              className="lg:hidden fixed inset-0 z-10 bg-black/60 animate-in fade-in duration-200"
-            />
-          )}
-
-          <div
-            className={`${chatOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-out lg:static fixed inset-y-0 right-0 z-20 lg:z-auto flex w-full lg:w-[420px] lg:min-w-[320px] border-l border-zinc-800/60 bg-zinc-950/80 flex-col shrink-0`}
-          >
-            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800/60">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-xs uppercase tracking-widest font-semibold text-zinc-300">Live Chat</span>
-              </div>
-              <button
-                onClick={() => setChatOpen(false)}
-                className="lg:hidden p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-                aria-label="Close chat"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+          <div className="hidden lg:flex lg:w-[420px] lg:min-w-[320px] lg:flex-col lg:border-l lg:border-zinc-800/60 lg:bg-zinc-950/80">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800/60">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-xs uppercase tracking-widest font-semibold text-zinc-300">Live Chat</span>
             </div>
             <div className="flex-1 min-h-0">
               <iframe
                 src={chatSrc}
-                className="w-full h-full border-0 min-h-[400px] lg:min-h-0"
+                className="w-full h-full border-0"
                 allow="clipboard-write"
               />
             </div>
+          </div>
+        </div>
+
+        <div className="lg:hidden border-t border-zinc-800/60 bg-zinc-950/80">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800/60">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-xs uppercase tracking-widest font-semibold text-zinc-300">Live Chat</span>
+          </div>
+          <div className="h-[50vh]">
+            <iframe
+              src={chatSrc}
+              className="w-full h-full border-0"
+              allow="clipboard-write"
+            />
           </div>
         </div>
       </div>
