@@ -2,8 +2,6 @@ import { rawQueryOrThrow } from '@/lib/db';
 import type { StreamSource } from '@/lib/stream-scraper';
 
 const FALLBACK: StreamSource[] = [
-  { id: 'soccerball', name: 'Soccer Ball', url: 'https://soccerball.st/rampages/unoairuf/', verified: true },
-  { id: 'statusnode', name: 'StatusNode', url: 'https://statusnode.is/nodejs/?t=2', verified: true },
   { id: 'streamscenter', name: 'Streams Center', url: 'https://streams.center/embed/ch48.php', verified: true },
 ];
 
