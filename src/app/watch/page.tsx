@@ -28,9 +28,29 @@ export default function WatchPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   const [sourceSheetOpen, setSourceSheetOpen] = useState(false);
+  const [eventStatus, setEventStatus] = useState<'live' | 'upcoming' | 'finished' | null>(null);
 
   useEffect(() => {
     setChatOpen(window.innerWidth >= 1024);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/ufc/events?limit=1').then(r => r.json()).then(res => {
+      if (!res.data?.[0]) return;
+      const e = res.data[0];
+      const eventDate = new Date(e.date);
+      const now = new Date();
+      const todayStr = now.toDateString();
+      if (e.statusState === 'in') {
+        setEventStatus('live');
+      } else if (eventDate.toDateString() === todayStr || (Math.abs(eventDate.getTime() - now.getTime()) < 14400000 && eventDate <= now)) {
+        setEventStatus('live');
+      } else if (eventDate > now) {
+        setEventStatus('upcoming');
+      } else {
+        setEventStatus('finished');
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -143,10 +163,18 @@ export default function WatchPage() {
           <span className="text-sm font-medium">Back</span>
         </Link>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-600/10 border border-red-600/20">
-            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-[10px] uppercase tracking-widest text-red-400 font-semibold">Live</span>
-          </div>
+          {eventStatus === 'live' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-600/10 border border-red-600/20">
+              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-[10px] uppercase tracking-widest text-red-400 font-semibold">Live</span>
+            </div>
+          )}
+          {eventStatus === 'upcoming' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-600/10 border border-yellow-600/20">
+              <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full" />
+              <span className="text-[10px] uppercase tracking-widest text-yellow-400 font-semibold">Starts Soon</span>
+            </div>
+          )}
         </div>
       </header>
 
