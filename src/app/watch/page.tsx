@@ -16,7 +16,6 @@ const LOAD_TIMEOUT = 20000;
 
 export default function WatchPage() {
   const sourceScroller = useRef<HTMLDivElement>(null);
-  const clickShield = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const trustedUrlRef = useRef<string>('');
 
@@ -28,7 +27,6 @@ export default function WatchPage() {
   const [apiLoaded, setApiLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
-  const [shieldActive, setShieldActive] = useState(true);
   const [sourceSheetOpen, setSourceSheetOpen] = useState(false);
 
   useEffect(() => {
@@ -76,16 +74,11 @@ export default function WatchPage() {
     return () => clearInterval(interval);
   }, [activeSource]);
 
-  const dismissShield = useCallback(() => {
-    setShieldActive(false);
-  }, []);
-
   const changeSource = useCallback((source: Source) => {
     if (activeSource && source.id === activeSource.id && !error) return;
     setActiveSource(source);
     setLoading(true);
     setError(false);
-    setShieldActive(true);
     setRetry(k => k + 1);
     setSourceSheetOpen(false);
   }, [activeSource?.id, error]);
@@ -256,21 +249,7 @@ export default function WatchPage() {
                   onLoad={() => { setLoading(false); setError(false); }}
                 />
 
-                {shieldActive && !error && (
-                  <div
-                    ref={clickShield}
-                    onClick={dismissShield}
-                    className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-black/40 backdrop-blur-[1px] transition-opacity"
-                  >
-                    <div className="flex flex-col items-center gap-3 px-6 py-4 rounded-2xl bg-zinc-900/80 border border-zinc-800/60">
-                      <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                      <p className="text-sm text-zinc-300 font-medium">Tap to interact</p>
-                      <p className="text-xs text-zinc-500 text-center">One tap needed to enable controls</p>
-                    </div>
-                  </div>
-                )}
+
               </div>
 
               <div className="hidden lg:flex items-center justify-between px-3 py-1.5 bg-zinc-900/60 border-t border-zinc-800/30">
