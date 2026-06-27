@@ -11,7 +11,6 @@ interface Source {
   error?: string;
 }
 
-const CHAT_SRC = 'https://www.youtube.com/live_chat?v=RlrRro00XYY&embed_domain=www.ufc.solutions';
 const LOAD_TIMEOUT = 20000;
 
 export default function WatchPage() {
@@ -29,9 +28,11 @@ export default function WatchPage() {
   const [chatOpen, setChatOpen] = useState(true);
   const [sourceSheetOpen, setSourceSheetOpen] = useState(false);
   const [eventStatus, setEventStatus] = useState<'live' | 'upcoming' | 'finished' | null>(null);
+  const [chatSrc, setChatSrc] = useState('');
 
   useEffect(() => {
     setChatOpen(window.innerWidth >= 1024);
+    setChatSrc(`https://www.youtube.com/live_chat?v=RlrRro00XYY&embed_domain=${encodeURIComponent(window.location.hostname)}`);
   }, []);
 
   useEffect(() => {
@@ -271,8 +272,8 @@ export default function WatchPage() {
                   key={`${activeSource!.id}-${retry}`}
                   src={activeSource!.url}
                   className={`w-full h-full border-0 transition-opacity duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}
-                  allow="fullscreen"
-                  referrerPolicy="no-referrer"
+                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                   onLoad={() => { setLoading(false); setError(false); }}
                 />
@@ -348,7 +349,7 @@ export default function WatchPage() {
               </div>
               <div className="flex-1 min-h-0">
                 <iframe
-                  src={CHAT_SRC}
+                  src={chatSrc}
                   className="w-full h-full border-0 min-h-[400px] lg:min-h-0"
                   allow="fullscreen"
                   referrerPolicy="no-referrer"
