@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 const STREAM_URL = 'https://streams.center/embed/ch48.php';
-const LOAD_TIMEOUT = 20000;
+const ERROR_TIMEOUT = 25000;
+const HIDE_LOADER_AFTER = 6000;
 
 export default function WatchPage() {
   const [loading, setLoading] = useState(true);
@@ -37,8 +38,9 @@ export default function WatchPage() {
 
   useEffect(() => {
     if (!loading) return;
-    const t = setTimeout(() => setError(true), LOAD_TIMEOUT);
-    return () => clearTimeout(t);
+    const hideLoader = setTimeout(() => setLoading(false), HIDE_LOADER_AFTER);
+    const showError = setTimeout(() => setError(true), ERROR_TIMEOUT);
+    return () => { clearTimeout(hideLoader); clearTimeout(showError); };
   }, [loading, retry]);
 
   return (
