@@ -2,7 +2,12 @@ import { rawQueryOrThrow } from '@/lib/db';
 import type { StreamSource } from '@/lib/stream-scraper';
 
 const FALLBACK: StreamSource[] = [
-  { id: 'streamscenter', name: 'Streams Center', url: 'https://streams.center/embed/ch48.php', verified: true },
+  { id: 'streameast', name: 'StreamEast', url: 'https://www.streameast100.com/', verified: false },
+  { id: 'crackstreams', name: 'CrackStreams', url: 'https://crackstreams.one/', verified: false },
+  { id: 'methstreams', name: 'MethStreams', url: 'https://www.methstreams.pro/', verified: false },
+  { id: 'sportsurge', name: 'Sportsurge', url: 'https://sportsurge100.com/', verified: false },
+  { id: 'totalsportek', name: 'TOTALSPORTEK', url: 'https://www.totalsportekpro.com/', verified: false },
+  { id: 'hesgoal', name: 'Hesgoal', url: 'https://hesgoalfree.com/', verified: false },
 ];
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +31,24 @@ export async function GET() {
       }));
       return Response.json({ sources, source: 'database' });
     }
+  } catch {}
+
+  try {
+    const { scrapeAllSites } = await import('@/lib/stream-scraper');
+    scrapeAllSites(async (sources) => {
+      for (const s of sources) {
+        try {
+          await rawQueryOrThrow(
+            `INSERT INTO stream_sources (source_id, name, url, verified, event_name, event_date, error)
+             VALUES ($1,$2,$3,$4,$5,$6,$7)
+             ON CONFLICT (source_id) DO UPDATE SET url=$3, verified=$4, event_name=$5, event_date=$6, error=$7, created_at=NOW()`,
+            [s.id, s.name, s.url, s.verified ? 1 : 0, s.eventName || null, s.eventDate || null, s.error || null],
+          );
+        } catch {}
+      }
+    }).then((result) => {
+      if (result.sources.length > 0) console.log('[SOURCES] Background scrape found', result.sources.length, 'sources');
+    }).catch(() => {});
   } catch {}
 
   return Response.json({ sources: FALLBACK, source: 'fallback' });
