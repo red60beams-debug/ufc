@@ -1,16 +1,9 @@
 import { rawQueryOrThrow } from '@/lib/db';
+import { scrapeAllSites } from '@/lib/stream-scraper';
 import type { StreamSource } from '@/lib/stream-scraper';
 
-const FALLBACK: StreamSource[] = [
-  { id: 'streameast', name: 'StreamEast', url: 'https://www.streameast100.com/', verified: false },
-  { id: 'crackstreams', name: 'CrackStreams', url: 'https://crackstreams.one/', verified: false },
-  { id: 'methstreams', name: 'MethStreams', url: 'https://www.methstreams.pro/', verified: false },
-  { id: 'sportsurge', name: 'Sportsurge', url: 'https://sportsurge100.com/', verified: false },
-  { id: 'totalsportek', name: 'TOTALSPORTEK', url: 'https://www.totalsportekpro.com/', verified: false },
-  { id: 'hesgoal', name: 'Hesgoal', url: 'https://hesgoalfree.com/', verified: false },
-];
-
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function GET() {
   try {
@@ -34,8 +27,7 @@ export async function GET() {
   } catch {}
 
   try {
-    const { scrapeAllSites } = await import('@/lib/stream-scraper');
-    scrapeAllSites(async (sources) => {
+    const result = await scrapeAllSites(async (sources) => {
       for (const s of sources) {
         try {
           await rawQueryOrThrow(
@@ -46,12 +38,14 @@ export async function GET() {
           );
         } catch {}
       }
-    }).then((result) => {
-      if (result.sources.length > 0) console.log('[SOURCES] Background scrape found', result.sources.length, 'sources');
-    }).catch(() => {});
+    });
+
+    if (result.sources.length > 0) {
+      return Response.json({ sources: result.sources, source: 'scrape' });
+    }
   } catch {}
 
-  return Response.json({ sources: FALLBACK, source: 'fallback' });
+  return Response.json({ sources: [], source: 'none' });
 }
 
 export async function POST(request: Request) {

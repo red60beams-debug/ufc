@@ -10,11 +10,12 @@ interface StreamSource {
   verified: boolean;
 }
 
+const PRIMARY: StreamSource = { id: 'embedst', name: 'Embed ST', url: 'https://embed.st/embed/golf/23743/1', verified: true };
 const ERROR_TIMEOUT = 25000;
 const HIDE_LOADER_AFTER = 6000;
 
 export default function WatchPage() {
-  const [sources, setSources] = useState<StreamSource[]>([]);
+  const [sources, setSources] = useState<StreamSource[]>([PRIMARY]);
   const [sourceIndex, setSourceIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -32,7 +33,7 @@ export default function WatchPage() {
       .then(r => r.json())
       .then(res => {
         if (res.sources?.length > 0) {
-          setSources(res.sources);
+          setSources(prev => [PRIMARY, ...res.sources.filter((s: StreamSource) => s.id !== PRIMARY.id)]);
         } else {
           setFetchError(true);
         }
@@ -194,7 +195,6 @@ export default function WatchPage() {
                   referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                   onLoad={() => { setLoading(false); setError(false); }}
-                  onError={() => { if (loading) setError(true); }}
                 />
               )}
             </div>
