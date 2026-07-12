@@ -2,13 +2,13 @@ import { rawQueryOrThrow, query } from './db';
 
 const BASE = 'https://fullfightreplays.com';
 const SCRAPE_PATH = '/ufc';
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 1;
 
 async function fetchPage(url: string): Promise<string> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
+      const timeout = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
         signal: controller.signal,
@@ -253,17 +253,24 @@ export async function scrapeAll(maxPages = 10): Promise<{
     console.log('[FFR-SCRAPER] Starting scrape of fullfightreplays.com');
 
     const entries: ScrapedEntry[] = [];
-    for (let page = 1; page <= maxPages; page++) {
-      try {
+    const pageResults = await Promise.allSettled(
+      Array.from({ length: maxPages }, (_, i) => {
+        const page = i + 1;
         const url = page === 1 ? `${BASE}${SCRAPE_PATH}` : `${BASE}${SCRAPE_PATH}?page${page}`;
-        console.log(`[FFR-SCRAPER] Fetching page ${page}: ${url}`);
-        const html = await fetchPage(url);
-        const pageEntries = extractListEntries(html);
-        console.log(`[FFR-SCRAPER]   Found ${pageEntries.length} entries on page ${page}`);
-        entries.push(...pageEntries);
+        return fetchPage(url).then(html => {
+          const pageEntries = extractListEntries(html);
+          console.log(`[FFR-SCRAPER] Page ${page}: ${pageEntries.length} entries`);
+          return pageEntries;
+        });
+      })
+    );
+    for (let i = 0; i < pageResults.length; i++) {
+      const r = pageResults[i];
+      if (r.status === 'fulfilled') {
+        entries.push(...r.value);
         pagesScanned++;
-      } catch (err: any) {
-        errors.push(`Page ${page}: ${err.message}`);
+      } else {
+        errors.push(`Page ${i + 1}: ${r.reason?.message || 'failed'}`);
       }
     }
 
@@ -276,45 +283,50 @@ export async function scrapeAll(maxPages = 10): Promise<{
       existing.forEach((r: any) => existingSlugs.add(r.slug));
     } catch {}
 
-    for (const entry of entries) {
-      try {
-        const entrySlug = slugify(entry.title);
-        if (existingSlugs.has(entrySlug)) continue;
+    const BATCH = 5;
+    for (let i = 0; i < entries.length; i += BATCH) {
+      const batch = entries.slice(i, i + BATCH);
+      const results = await Promise.allSettled(
+        batch.map(async (entry): Promise<boolean> => {
+          const entrySlug = slugify(entry.title);
+          if (existingSlugs.has(entrySlug)) return false;
 
-        const html = await fetchPage(entry.url);
-        const pageTitle = extractPageTitle(html) || entry.title;
-        const category = extractCategory(html) || entry.category;
-        const description = extractDescription(html);
-        const mainImage = extractMainImage(html) || entry.thumbnail;
-        const embeds = extractVideoEmbeds(html);
-        const eventDate = parseDate(pageTitle, description, html) || extractEntryDate(html);
+          const html = await fetchPage(entry.url);
+          const pageTitle = extractPageTitle(html) || entry.title;
+          const category = extractCategory(html) || entry.category;
+          const description = extractDescription(html);
+          const mainImage = extractMainImage(html) || entry.thumbnail;
+          const embeds = extractVideoEmbeds(html);
+          const eventDate = parseDate(pageTitle, description, html) || extractEntryDate(html);
 
-        if (embeds.length === 0) {
-          errors.push(`${pageTitle}: no video embeds found`);
-          continue;
-        }
+          if (embeds.length === 0) {
+            throw new Error(`${pageTitle}: no video embeds found`);
+          }
 
-        const fighters = parseFighters(pageTitle);
-        const promotion = determinePromotion(category, pageTitle);
-        const primaryVideo = embeds[0].url.startsWith('http') ? embeds[0].url : `https:${embeds[0].url}`;
-        const thumbnail = normalizeThumbnail(mainImage);
-        const embedSources = JSON.stringify(embeds);
+          const fighters = parseFighters(pageTitle);
+          const promotion = determinePromotion(category, pageTitle);
+          const primaryVideo = embeds[0].url.startsWith('http') ? embeds[0].url : `https:${embeds[0].url}`;
+          const thumbnail = normalizeThumbnail(mainImage);
+          const embedSources = JSON.stringify(embeds);
 
-        await rawQueryOrThrow(
-          `INSERT INTO ufc_replays 
-           (title, slug, promotion, event_name, fighter1, fighter2, thumbnail, video_url, event_date, description, source, embed_sources, published, views, created_at, updated_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,1,0,NOW(),NOW())`,
-          [
-            pageTitle, entrySlug, promotion, pageTitle,
-            fighters.fighter1 || pageTitle, fighters.fighter2 || '',
-            thumbnail, primaryVideo, eventDate,
-            description || category, 'fullfightreplays', embedSources,
-          ]
-        );
-        newFights++;
-        console.log(`[FFR-SCRAPER]  + ${pageTitle} (${promotion}, ${embeds.length} embeds)`);
-      } catch (err: any) {
-        errors.push(`${entry.title}: ${err.message}`);
+          await rawQueryOrThrow(
+            `INSERT INTO ufc_replays 
+             (title, slug, promotion, event_name, fighter1, fighter2, thumbnail, video_url, event_date, description, source, embed_sources, published, views, created_at, updated_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,1,0,NOW(),NOW())`,
+            [
+              pageTitle, entrySlug, promotion, pageTitle,
+              fighters.fighter1 || pageTitle, fighters.fighter2 || '',
+              thumbnail, primaryVideo, eventDate,
+              description || category, 'fullfightreplays', embedSources,
+            ]
+          );
+          console.log(`[FFR-SCRAPER]  + ${pageTitle} (${promotion}, ${embeds.length} embeds)`);
+          return true;
+        })
+      );
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value) newFights++;
+        else if (r.status === 'rejected') errors.push(r.reason?.message || 'unknown error');
       }
     }
 
