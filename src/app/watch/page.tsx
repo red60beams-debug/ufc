@@ -12,14 +12,15 @@ interface StreamSource {
 }
 
 const HARDCODED: StreamSource[] = [
-  { id: 'streameast', name: 'Streameast', url: 'https://www.streameast100.com/', verified: true },
-  { id: 'methstreams', name: 'MethStreams', url: 'https://www.methstreams.pro/', verified: true },
-  { id: 'crackstreams', name: 'CrackStreams', url: 'https://crackstreams.one/', verified: true },
-  { id: 'sportsurge', name: 'Sportsurge', url: 'https://sportsurge100.com/', verified: true },
-  { id: 'totalsportek', name: 'TOTALSPORTEK', url: 'https://www.totalsportekpro.com/', verified: true },
-  { id: 'footybite', name: 'Footybite', url: 'https://www.footybite.to/', verified: true },
-  { id: 'nflbite', name: 'NFLBITE', url: 'https://www.nflbite.to/', verified: true },
-  { id: 'hesgoal', name: 'Hesgoal', url: 'https://hesgoalfree.com/', verified: true },
+  { id: 'embedst-hd', name: 'Embed ST HD', url: 'https://embed.st/embed/admin/ppv-ufc-329-mc-gregor-vs-holloway-2/1', verified: true },
+  { id: 'crck-ufc', name: 'CrackStreams UFC', url: 'https://crckstreams.ch/Streams/UFC/McGregor-vs-Holloway/', verified: true },
+  { id: 'embedindia', name: 'Embed India', url: 'https://embedindia.st/embed/ufc-329', verified: true },
+  { id: 'ufc-fightpass', name: 'UFC Fight Pass', url: 'https://crckstreams.ch/Streams/Channel/UFC-Fight-Pass/', verified: true },
+  { id: 'paramount', name: 'Paramount+', url: 'https://crckstreams.ch/Streams/Channel/Paramouth/', verified: true },
+  { id: 'embedst-fight', name: 'Fight Night HD', url: 'https://embed.st/embed/admin/ppv-ufc-fight-night-kape-vs-horiguchi/1', verified: true },
+  { id: 'crackstreams-sched', name: 'MMA Schedule', url: 'https://crackstreams1.in/MMA/', verified: true },
+  { id: 'embedindia-pt', name: 'IPTV Portuguese', url: 'https://embedindia.st/embed/ufc-329/portuguese', verified: true },
+  { id: 'embedindia-es', name: 'IPTV Spanish', url: 'https://embedindia.st/embed/ufc-329/spanish', verified: true },
 ];
 
 const ERROR_TIMEOUT = 25000;
