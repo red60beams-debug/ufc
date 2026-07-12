@@ -14,9 +14,9 @@ const FAST_TIMEOUT = 4000;
 const VERIFY_TIMEOUT = 3000;
 
 const SITES = [
+  { id: 'totalsportekz', name: 'TotalSportekZ', url: 'https://totalsportekz.is/' },
   { id: 'soccerball', name: 'Soccer Ball', url: 'https://soccerball.st/rampages/unoairuf/' },
   { id: 'statusnode', name: 'StatusNode', url: 'https://statusnode.is/nodejs/?t=2' },
-  { id: 'streamscenter', name: 'Streams Center', url: 'https://streams.center/embed/ch48.php' },
   { id: 'totalsportek', name: 'TOTALSPORTEK', url: 'https://www.totalsportekpro.com/' },
   { id: 'streameast', name: 'StreamEast', url: 'https://www.streameast100.com/' },
   { id: 'footybite', name: 'Footybite', url: 'https://www.footybite.to/' },
@@ -216,6 +216,45 @@ async function tryHomepage(site: { id: string; name: string; url: string }): Pro
   return null;
 }
 
+async function tryTotalSportekZ(): Promise<StreamSource[]> {
+  const sources: StreamSource[] = [];
+  const html = await fetchFast('https://totalsportekz.is/');
+  if (!html) return sources;
+
+  const seen = new Set<string>();
+
+  for (const a of extractAll(html, '<a', '</a>')) {
+    const href = between(a, 'href="', '"') || between(a, "href='", "'");
+    const text = a.replace(/<[^>]*>/g, '').trim();
+    if (!href) continue;
+    const both = (href + ' ' + text).toLowerCase();
+    if (!both.includes('ufc')) continue;
+
+    const full = normalize(href, 'https://totalsportekz.is/');
+    if (!full || seen.has(full)) continue;
+    seen.add(full);
+
+    const page = await fetchFast(full);
+    if (!page) continue;
+
+    const pageEmbeds = extractEmbeds(page);
+    for (const embed of pageEmbeds) {
+      const resolved = normalize(embed, full);
+      if (!resolved || seen.has(resolved)) continue;
+      seen.add(resolved);
+      const verified = await headFast(resolved);
+      sources.push({
+        id: `totalsportekz-${sources.length + 1}`,
+        name: `TotalSportekZ #${sources.length + 1}`,
+        url: resolved,
+        verified,
+      });
+    }
+  }
+
+  return sources;
+}
+
 export async function scrapeAllSites(saveToDb?: (sources: StreamSource[]) => Promise<void>): Promise<{
   sources: StreamSource[];
   eventInfo: { name: string; date: string } | null;
@@ -228,9 +267,15 @@ export async function scrapeAllSites(saveToDb?: (sources: StreamSource[]) => Pro
   if (eventInfo) log(`Event: ${eventInfo.name}`);
   else log('No event info from ESPN');
 
-  log(`Scraping ${SITES.length} sites...`);
-
   const allSources: StreamSource[] = [];
+
+  const tzSources = await tryTotalSportekZ();
+  for (const s of tzSources) {
+    allSources.push({ ...s, eventName: eventInfo?.name, eventDate: eventInfo?.date });
+    log(`${s.name}: ${s.url} (${s.verified ? 'ok' : '?'})`);
+  }
+
+  log(`Scraping ${SITES.length} sites...`);
 
   for (let i = 0; i < SITES.length; i += 4) {
     const batch = SITES.slice(i, i + 4);
@@ -253,7 +298,7 @@ export async function scrapeAllSites(saveToDb?: (sources: StreamSource[]) => Pro
     }
   }
 
-  log(`Found: ${allSources.length}/${SITES.length}`);
+  log(`Found: ${allSources.length} source(s)`);
 
   if (saveToDb && allSources.length > 0) {
     await saveToDb(allSources);
