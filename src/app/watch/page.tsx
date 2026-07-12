@@ -32,7 +32,7 @@ export default function WatchPage() {
   const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
-    setChatSrc(`https://www.youtube.com/live_chat?v=RlrRro00XYY&embed_domain=${encodeURIComponent(window.location.hostname)}`);
+    setChatSrc(`https://www.youtube.com/live_chat?v=UjRWfgoJF8A&embed_domain=${encodeURIComponent(window.location.hostname)}`);
   }, []);
 
   useEffect(() => {
