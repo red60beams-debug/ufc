@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import SourceSelector from '@/components/SourceSelector';
 
 interface StreamSource {
   id: string;
@@ -235,31 +236,12 @@ export default function WatchPage() {
         </div>
       </div>
 
-      {sources.length > 1 && (
-        <div className="border-t border-zinc-800/40 bg-zinc-900/40">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-3">Stream Sources</p>
-            <div className="flex flex-wrap items-center gap-2">
-              {sources.map((s, i) => (
-                <button
-                  key={s.id}
-                  onClick={() => switchSource(i)}
-                  className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors ${
-                    i === sourceIndex
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
-                      : 'bg-zinc-800/60 text-zinc-400 hover:text-white hover:bg-zinc-700/60'
-                  }`}
-                >
-                  {s.name}
-                  {i === sourceIndex && loading && (
-                    <span className="ml-2 inline-block w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <SourceSelector
+        sources={sources}
+        currentIndex={sourceIndex}
+        loading={loading}
+        onSwitch={switchSource}
+      />
     </main>
   );
 }
