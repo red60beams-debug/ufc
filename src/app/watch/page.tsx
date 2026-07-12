@@ -203,27 +203,6 @@ export default function WatchPage() {
                 />
               )}
             </div>
-
-              {sources.length > 1 && (
-                <div className="flex items-center gap-1.5 px-3 py-2.5 bg-zinc-900/60 border-t border-zinc-800/40 overflow-x-auto shrink-0">
-                  {sources.map((s, i) => (
-                    <button
-                      key={s.id}
-                      onClick={() => switchSource(i)}
-                      className={`shrink-0 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider rounded-md transition-colors ${
-                        i === sourceIndex
-                          ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
-                          : 'bg-zinc-800/60 text-zinc-400 hover:text-white hover:bg-zinc-700/60'
-                      }`}
-                    >
-                      {s.name}
-                      {i === sourceIndex && loading && (
-                        <span className="ml-1.5 inline-block w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
           </div>
 
           <div className="hidden lg:flex lg:w-[420px] lg:min-w-[320px] lg:flex-col lg:border-l lg:border-zinc-800/60 lg:bg-zinc-950/80">
@@ -255,6 +234,32 @@ export default function WatchPage() {
           </div>
         </div>
       </div>
+
+      {sources.length > 1 && (
+        <div className="border-t border-zinc-800/40 bg-zinc-900/40">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-3">Stream Sources</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {sources.map((s, i) => (
+                <button
+                  key={s.id}
+                  onClick={() => switchSource(i)}
+                  className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors ${
+                    i === sourceIndex
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
+                      : 'bg-zinc-800/60 text-zinc-400 hover:text-white hover:bg-zinc-700/60'
+                  }`}
+                >
+                  {s.name}
+                  {i === sourceIndex && loading && (
+                    <span className="ml-2 inline-block w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
