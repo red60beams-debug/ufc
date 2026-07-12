@@ -13,8 +13,6 @@ interface StreamSource {
 
 const HARDCODED: StreamSource[] = [
   { id: 'embedst-main', name: 'Embed ST HD', url: 'https://embed.st/embed/admin/ppv-ufc-329-mc-gregor-vs-holloway-2/1', verified: true },
-  { id: 'embedst-alt', name: 'Embed ST Alt', url: 'https://embed.st/embed/admin/ppv-ufc-329/1', verified: true },
-  { id: 'embedst-fight', name: 'Fight Night HD', url: 'https://embed.st/embed/admin/ppv-ufc-fight-night-kape-vs-horiguchi/1', verified: true },
 ];
 
 const ERROR_TIMEOUT = 25000;
@@ -247,12 +245,14 @@ export default function WatchPage() {
         </div>
       </div>
 
-      <SourceSelector
-        sources={sources}
-        currentIndex={sourceIndex}
-        loading={loading}
-        onSwitch={switchSource}
-      />
+      {sources.length > 1 && (
+        <SourceSelector
+          sources={sources}
+          currentIndex={sourceIndex}
+          loading={loading}
+          onSwitch={switchSource}
+        />
+      )}
     </main>
   );
 }
