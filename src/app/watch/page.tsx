@@ -12,10 +12,10 @@ interface StreamSource {
 }
 
 const HARDCODED: StreamSource[] = [
-  { id: 'embedst-main', name: 'Embed ST HD', url: 'https://embed.st/embed/admin/ppv-ufc-329-mc-gregor-vs-holloway-2/1', verified: true },
   { id: 'iframest', name: 'IFrame ST', url: 'https://iframe.st/rampages/ufc-329-mcgregor-vs-holloway-2/', verified: true },
+  { id: 'embedcx', name: 'Embed CX', url: 'https://embed.cx/admin/embed03/', verified: true },
+  { id: 'embedst-main', name: 'Embed ST HD', url: 'https://embed.st/embed/admin/ppv-ufc-329-mc-gregor-vs-holloway-2/1', verified: true },
   { id: 'streamecenter', name: 'StreamE Center', url: 'https://streame.center/embed/ch48.php', verified: true },
-  { id: 'iframest-alt', name: 'IFrame ST 2', url: 'https://iframe.st/rampages/ufc-329-mcgregor-vs-holloway-2/', verified: true },
 ];
 
 const ERROR_TIMEOUT = 25000;
