@@ -16,7 +16,6 @@ const VERIFY_TIMEOUT = 3000;
 const SITES = [
   { id: 'soccerball', name: 'Soccer Ball', url: 'https://soccerball.st/rampages/unoairuf/' },
   { id: 'statusnode', name: 'StatusNode', url: 'https://statusnode.is/nodejs/?t=2' },
-  { id: 'streamscenter', name: 'Streams Center', url: 'https://streams.center/embed/ch48.php' },
   { id: 'totalsportek', name: 'TOTALSPORTEK', url: 'https://www.totalsportekpro.com/' },
   { id: 'streameast', name: 'StreamEast', url: 'https://www.streameast100.com/' },
   { id: 'footybite', name: 'Footybite', url: 'https://www.footybite.to/' },
@@ -228,9 +227,9 @@ export async function scrapeAllSites(saveToDb?: (sources: StreamSource[]) => Pro
   if (eventInfo) log(`Event: ${eventInfo.name}`);
   else log('No event info from ESPN');
 
-  log(`Scraping ${SITES.length} sites...`);
-
   const allSources: StreamSource[] = [];
+
+  log(`Scraping ${SITES.length} sites...`);
 
   for (let i = 0; i < SITES.length; i += 4) {
     const batch = SITES.slice(i, i + 4);
@@ -253,7 +252,7 @@ export async function scrapeAllSites(saveToDb?: (sources: StreamSource[]) => Pro
     }
   }
 
-  log(`Found: ${allSources.length}/${SITES.length}`);
+  log(`Found: ${allSources.length} source(s)`);
 
   if (saveToDb && allSources.length > 0) {
     await saveToDb(allSources);

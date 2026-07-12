@@ -68,14 +68,19 @@ export default function WatchPage() {
 
   const currentSource = sources[sourceIndex];
 
+  const switchSource = useCallback((idx: number) => {
+    if (idx === sourceIndex) return;
+    setSourceIndex(idx);
+    setLoading(true);
+    setError(false);
+    setRetry(k => k + 1);
+  }, [sourceIndex]);
+
   const handleNextSource = useCallback(() => {
     if (sourceIndex < sources.length - 1) {
-      setSourceIndex(i => i + 1);
-      setLoading(true);
-      setError(false);
-      setRetry(k => k + 1);
+      switchSource(sourceIndex + 1);
     }
-  }, [sourceIndex, sources.length]);
+  }, [sourceIndex, sources.length, switchSource]);
 
   return (
     <main className="min-h-dvh bg-black text-white overflow-hidden select-none">
@@ -199,6 +204,27 @@ export default function WatchPage() {
               )}
             </div>
           </div>
+
+            {sources.length > 1 && (
+              <div className="flex items-center gap-1.5 px-3 py-2.5 bg-zinc-900/60 border-t border-zinc-800/40 overflow-x-auto">
+                {sources.map((s, i) => (
+                  <button
+                    key={s.id}
+                    onClick={() => switchSource(i)}
+                    className={`shrink-0 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider rounded-md transition-colors ${
+                      i === sourceIndex
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
+                        : 'bg-zinc-800/60 text-zinc-400 hover:text-white hover:bg-zinc-700/60'
+                    }`}
+                  >
+                    {s.name}
+                    {i === sourceIndex && loading && (
+                      <span className="ml-1.5 inline-block w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
 
           <div className="hidden lg:flex lg:w-[420px] lg:min-w-[320px] lg:flex-col lg:border-l lg:border-zinc-800/60 lg:bg-zinc-950/80">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800/60">
