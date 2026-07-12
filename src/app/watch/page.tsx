@@ -11,12 +11,22 @@ interface StreamSource {
   verified: boolean;
 }
 
-const PRIMARY: StreamSource = { id: 'embedst', name: 'Embed ST', url: 'https://embed.st/embed/golf/23743/1', verified: true };
+const HARDCODED: StreamSource[] = [
+  { id: 'streameast', name: 'Streameast', url: 'https://www.streameast100.com/', verified: true },
+  { id: 'methstreams', name: 'MethStreams', url: 'https://www.methstreams.pro/', verified: true },
+  { id: 'crackstreams', name: 'CrackStreams', url: 'https://crackstreams.one/', verified: true },
+  { id: 'sportsurge', name: 'Sportsurge', url: 'https://sportsurge100.com/', verified: true },
+  { id: 'totalsportek', name: 'TOTALSPORTEK', url: 'https://www.totalsportekpro.com/', verified: true },
+  { id: 'footybite', name: 'Footybite', url: 'https://www.footybite.to/', verified: true },
+  { id: 'nflbite', name: 'NFLBITE', url: 'https://www.nflbite.to/', verified: true },
+  { id: 'hesgoal', name: 'Hesgoal', url: 'https://hesgoalfree.com/', verified: true },
+];
+
 const ERROR_TIMEOUT = 25000;
 const HIDE_LOADER_AFTER = 6000;
 
 export default function WatchPage() {
-  const [sources, setSources] = useState<StreamSource[]>([PRIMARY]);
+  const [sources, setSources] = useState<StreamSource[]>(HARDCODED);
   const [sourceIndex, setSourceIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -34,12 +44,18 @@ export default function WatchPage() {
       .then(r => r.json())
       .then(res => {
         if (res.sources?.length > 0) {
-          setSources(prev => [PRIMARY, ...res.sources.filter((s: StreamSource) => s.id !== PRIMARY.id)]);
-        } else {
-          setFetchError(true);
+          setSources(prev => {
+            const merged = [...prev];
+            for (const s of res.sources) {
+              const idx = merged.findIndex(x => x.id === s.id);
+              if (idx >= 0) merged[idx] = s;
+              else merged.push(s);
+            }
+            return merged;
+          });
         }
       })
-      .catch(() => setFetchError(true));
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -84,7 +100,7 @@ export default function WatchPage() {
   }, [sourceIndex, sources.length, switchSource]);
 
   return (
-    <main className="min-h-dvh bg-black text-white overflow-hidden select-none">
+    <main className="min-h-dvh bg-black text-white select-none">
       <header className="flex items-center justify-between px-3 py-2.5 bg-zinc-900/80 border-b border-zinc-800/50">
         <Link
           href="/"

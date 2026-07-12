@@ -40,7 +40,7 @@ const ICONS = [
 ];
 
 export default function SourceSelector({ sources, currentIndex, loading, onSwitch }: SourceSelectorProps) {
-  if (sources.length < 2) return null;
+  if (sources.length < 1) return null;
 
   return (
     <div className="border-t border-zinc-800/40 bg-black">
