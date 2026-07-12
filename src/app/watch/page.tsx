@@ -12,9 +12,9 @@ interface StreamSource {
 }
 
 const HARDCODED: StreamSource[] = [
+  { id: 'embedst-hd', name: 'Embed ST HD', url: 'https://embed.st/embed/admin/ppv-ufc-329-mc-gregor-vs-holloway-2/1', verified: true },
   { id: 'crck-ufc', name: 'CrackStreams UFC', url: 'https://crckstreams.ch/Streams/UFC/McGregor-vs-Holloway/', verified: true },
   { id: 'embedindia', name: 'Embed India', url: 'https://embedindia.st/embed/ufc-329', verified: true },
-  { id: 'embedst-hd', name: 'Embed ST HD', url: 'https://embed.st/embed/admin/ppv-ufc-329-mc-gregor-vs-holloway-2/1', verified: true },
   { id: 'ufc-fightpass', name: 'UFC Fight Pass', url: 'https://crckstreams.ch/Streams/Channel/UFC-Fight-Pass/', verified: true },
   { id: 'paramount', name: 'Paramount+', url: 'https://crckstreams.ch/Streams/Channel/Paramouth/', verified: true },
   { id: 'embedst-fight', name: 'Fight Night HD', url: 'https://embed.st/embed/admin/ppv-ufc-fight-night-kape-vs-horiguchi/1', verified: true },
