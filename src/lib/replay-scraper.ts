@@ -126,13 +126,13 @@ function extractListEntries(html: string): ScrapedEntry[] {
     const url = titleMatch[1];
     const title = titleMatch[2].trim();
 
-    const thumbMatch = content.match(/<div class="poster"[^>]*>.*?<a[^>]*>.*?<img[^>]*src="([^"]*)"/);
+    const thumbMatch = content.match(/<div class="poster"[^>]*>[\s\S]*?<a[^>]*>[\s\S]*?<img[^>]*src="([^"]*)"/);
     const thumbnail = thumbMatch ? thumbMatch[1] : null;
 
-    const catMatch = content.match(/short_cat[^>]*>.*?<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/);
+    const catMatch = content.match(/short_cat[^>]*>[\s\S]*?<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/);
     const category = catMatch ? catMatch[2].trim() : '';
 
-    const viewsMatch = content.match(/short_icn[^>]*>.*?<span[^>]*>(\d+)<\/span>/);
+    const viewsMatch = content.match(/short_icn[^>]*>[\s\S]*?<span[^>]*>(\d+)<\/span>/);
     const views = viewsMatch ? parseInt(viewsMatch[1]) : 0;
 
     const fullUrl = url.startsWith('http') ? url : `${BASE}${url}`;
@@ -158,7 +158,7 @@ function extractDescription(html: string): string {
 }
 
 function extractMainImage(html: string): string | null {
-  const m = html.match(/<div class="full_img"[^>]*>.*?<img[^>]*src="([^"]*)"/);
+  const m = html.match(/<div class="full_img"[^>]*>[\s\S]*?<img[^>]*src="([^"]*)"/);
   return m ? m[1] : null;
 }
 
