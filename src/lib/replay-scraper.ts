@@ -237,7 +237,7 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-export async function scrapeAll(maxPages = 5): Promise<{
+export async function scrapeAll(maxPages = 10): Promise<{
   pagesScanned: number;
   entriesFound: number;
   newFights: number;
