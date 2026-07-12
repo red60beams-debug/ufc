@@ -5,9 +5,17 @@ import Link from 'next/link';
 import VideoPlayer from '@/components/VideoPlayer';
 import ReplayRow from '@/components/ReplayRow';
 
+interface EmbedSource {
+  platform: string;
+  url: string;
+  label: string;
+}
+
 export default function ReplayDetailClient({ replay, related }: { replay: any; related: any[] }) {
   const [img1Failed, setImg1Failed] = useState(false);
   const [img2Failed, setImg2Failed] = useState(false);
+  const [activeEmbed, setActiveEmbed] = useState<string>('');
+  const [embeds, setEmbeds] = useState<EmbedSource[]>([]);
 
   useEffect(() => {
     fetch('/api/replays/view', {
@@ -16,6 +24,19 @@ export default function ReplayDetailClient({ replay, related }: { replay: any; r
       body: JSON.stringify({ id: replay.id }),
     }).catch(() => {});
   }, [replay.id]);
+
+  useEffect(() => {
+    if (replay.embed_sources) {
+      try {
+        const parsed: EmbedSource[] = typeof replay.embed_sources === 'string'
+          ? JSON.parse(replay.embed_sources)
+          : replay.embed_sources;
+        setEmbeds(parsed);
+        if (parsed.length > 0) setActiveEmbed(parsed[0].url);
+      } catch {}
+    }
+    if (!activeEmbed && replay.video_url) setActiveEmbed(replay.video_url);
+  }, [replay]);
 
   const title = replay.title || `${replay.fighter1} vs ${replay.fighter2}`;
 
@@ -29,7 +50,28 @@ export default function ReplayDetailClient({ replay, related }: { replay: any; r
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-5">
-            <VideoPlayer src={replay.video_url} poster={replay.thumbnail} />
+            <VideoPlayer src={activeEmbed} poster={replay.thumbnail} />
+
+            {embeds.length > 1 && (
+              <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] border border-gray-800 rounded-2xl p-4 md:p-5">
+                <h3 className="text-white text-xs uppercase tracking-wider font-semibold mb-3">Stream Links</h3>
+                <div className="flex flex-wrap gap-2">
+                  {embeds.map((e, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveEmbed(e.url)}
+                      className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+                        activeEmbed === e.url
+                          ? 'bg-ufc-red text-white shadow-lg shadow-red-900/30'
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-gray-800'
+                      }`}
+                    >
+                      {e.label !== 'Watch' ? e.label : e.platform}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] border border-gray-800 rounded-2xl p-5 md:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
